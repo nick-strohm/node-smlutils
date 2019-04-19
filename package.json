@@ -1,0 +1,35 @@
+{
+  "name": "node-smlutils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./build/release/smlutils",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install": "node-gyp rebuild"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nick-strohm/node-smlutils.git"
+  },
+  "keywords": [
+    "Windows",
+    "Dll",
+    "Satisfactory",
+    "Modloader",
+    "SML",
+    "Data",
+    "Version",
+    "Properties"
+  ],
+  "author": "Nick Strohm <nick.strohm99@gmail.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/nick-strohm/node-smlutils/issues"
+  },
+  "homepage": "https://github.com/nick-strohm/node-smlutils#readme",
+  "dependencies": {
+    "bindings": "^1.5.0",
+    "nan": "^2.13.2"
+  },
+  "gypfile": true
+}
