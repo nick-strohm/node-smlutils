@@ -6,13 +6,16 @@ public:
     static NAN_MODULE_INIT(Init) {
         v8::Local<v8::FunctionTemplate> tpl = Nan::New<v8::FunctionTemplate>(New);
         tpl->SetClassName(Nan::New("Mod").ToLocalChecked());
-        tpl->InstanceTemplate()->SetInternalFieldCount(6);
+        v8::Local<v8::ObjectTemplate> itpl = tpl->InstanceTemplate();
+        itpl->SetInternalFieldCount(6);
 
-        Nan::SetPrototypeMethod(tpl, "getName", GetName);
-        Nan::SetPrototypeMethod(tpl, "getDescription", GetDescription);
-        Nan::SetPrototypeMethod(tpl, "getAuthor", GetAuthor);
-        Nan::SetPrototypeMethod(tpl, "getVersion", GetVersion);
-        Nan::SetPrototypeMethod(tpl, "hasSetup", HasSetup);
+        Nan::SetPrototypeMethod(tpl, "reload", Reload);
+        Nan::SetAccessor(itpl, Nan::New("path").ToLocalChecked(), GetPath);
+        Nan::SetAccessor(itpl, Nan::New("name").ToLocalChecked(), GetName);
+        Nan::SetAccessor(itpl, Nan::New("description").ToLocalChecked(), GetDescription);
+        Nan::SetAccessor(itpl, Nan::New("author").ToLocalChecked(), GetAuthor);
+        Nan::SetAccessor(itpl, Nan::New("version").ToLocalChecked(), GetVersion);
+        Nan::SetAccessor(itpl, Nan::New("hasSetup").ToLocalChecked(), HasSetup);
 
         constructor().Reset(Nan::GetFunction(tpl).ToLocalChecked());
         Nan::Set(target, Nan::New("Mod").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
@@ -21,7 +24,8 @@ public:
 private:
     Mod(v8::Local<v8::String> _path) {
         v8::String::Utf8Value val(_path);
-        hInstance = LoadLibrary(*val);
+        path = *val;
+        HINSTANCE hInstance = LoadLibrary(path.c_str());
 
         FARPROC proc = GetProcAddress(hInstance, "ModName");
         if (proc != nullptr) {
@@ -51,9 +55,7 @@ private:
         if (proc != nullptr) {
             setup = true;
         }
-    }
 
-    ~Mod() {
         FreeLibrary(hInstance);
     }
 
@@ -72,7 +74,51 @@ private:
         info.GetReturnValue().Set(Nan::NewInstance(cons, argc, argv).ToLocalChecked());
     }
 
-    static NAN_METHOD(GetName) {
+    static NAN_METHOD(Reload) {
+        Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
+        HINSTANCE hInstance = LoadLibrary(mod->path.c_str());
+
+        FARPROC proc = GetProcAddress(hInstance, "ModName");
+        if (proc != nullptr) {
+            std::string value = *(std::string*)proc;
+            mod->name = value;
+        }
+
+        proc = GetProcAddress(hInstance, "ModDescription");
+        if (proc != nullptr) {
+            std::string value = *(std::string*)proc;
+            mod->description = value;
+        }
+
+        proc = GetProcAddress(hInstance, "ModAuthors");
+        if (proc != nullptr) {
+            std::string value = *(std::string*)proc;
+            mod->author = value;
+        }
+
+        proc = GetProcAddress(hInstance, "ModVersion");
+        if (proc != nullptr) {
+            std::string value = *(std::string*)proc;
+            mod->version = value;
+        }
+
+        proc = GetProcAddress(hInstance, "setup");
+        if (proc != nullptr) {
+            mod->setup = true;
+        }
+
+        FreeLibrary(hInstance);
+    }
+
+    static NAN_GETTER(GetPath) {
+        Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
+        std::string val = mod->path;
+        v8::Local<v8::String> value = Nan::New<v8::String>(val.c_str()).ToLocalChecked();
+        
+        info.GetReturnValue().Set(value);
+    }
+
+    static NAN_GETTER(GetName) {
         Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
         std::string val = mod->name;
         v8::Local<v8::String> value = Nan::New<v8::String>(val.c_str()).ToLocalChecked();
@@ -80,7 +126,7 @@ private:
         info.GetReturnValue().Set(value);
     }
 
-    static NAN_METHOD(GetDescription) {
+    static NAN_GETTER(GetDescription) {
         Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
         std::string val = mod->description;
         v8::Local<v8::String> value = Nan::New<v8::String>(val.c_str()).ToLocalChecked();
@@ -88,7 +134,7 @@ private:
         info.GetReturnValue().Set(value);
     }
 
-    static NAN_METHOD(GetAuthor) {
+    static NAN_GETTER(GetAuthor) {
         Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
         std::string val = mod->author;
         v8::Local<v8::String> value = Nan::New<v8::String>(val.c_str()).ToLocalChecked();
@@ -96,7 +142,7 @@ private:
         info.GetReturnValue().Set(value);
     }
 
-    static NAN_METHOD(GetVersion) {
+    static NAN_GETTER(GetVersion) {
         Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
         std::string val = mod->version;
         v8::Local<v8::String> value = Nan::New<v8::String>(val.c_str()).ToLocalChecked();
@@ -104,7 +150,7 @@ private:
         info.GetReturnValue().Set(value);
     }
 
-    static NAN_METHOD(HasSetup) {
+    static NAN_GETTER(HasSetup) {
         Mod* mod = Nan::ObjectWrap::Unwrap<Mod>(info.Holder());
         bool val = mod->setup;
         v8::Local<v8::Boolean> value = Nan::New<v8::Boolean>(val);
@@ -117,8 +163,7 @@ private:
         return my_constructor;
     }
 
-    HINSTANCE hInstance;
-
+    std::string path;
     std::string name;
     std::string description;
     std::string author;

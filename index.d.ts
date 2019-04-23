@@ -1,9 +1,10 @@
 export class Mod {
     constructor(path: string);
 
-    getName(): string;
-    getDescription(): string;
-    getAuthor(): string;
-    getVersion(): string;
-    hasSetup(): boolean;
+    reload(): void;
+    get name(): string;
+    get description(): string;
+    get author(): string;
+    get version(): string;
+    get hasSetup(): boolean;
 }
